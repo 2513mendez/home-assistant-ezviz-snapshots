@@ -1,20 +1,14 @@
 name: EZVIZ Snapshot Grabber
-version: "1.0.0"
+version: 1.0.0
 slug: ezviz_snapshots
-description: Obtiene snapshots de cámaras EZVIZ y los guarda en www/snapshots
-startup: once
-boot: manual
-hassio_api: true
-hassio_role: admin
-homeassistant_api: true
+description: Obtiene snapshots de cámaras EZVIZ y los guarda en www/snapshots.
 arch:
   - aarch64
-  - amd64
-  - armv7
-map:
-  - config:rw
+image: ghcr.io/2513mendez/ezviz_snapshots_{arch}
+startup: once
+boot: manual
 options:
-  token: ""
+  token: "TU_TOKEN_DE_EZVIZ"
 schema:
   token: str
-image: ghcr.io/2513mendez/ezviz_snapshots_{arch}
+  
