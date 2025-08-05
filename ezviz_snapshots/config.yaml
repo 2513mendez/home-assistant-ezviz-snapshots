@@ -7,7 +7,19 @@ arch:
 image: "ghcr.io/2513mendez/ezvizsnapshots"
 startup: once
 boot: manual
+
+# No uses addon_config ni homeassistant_config si usas config
+# Tampoco declares full y selective device access juntos
+
+host_network: true  # solo si realmente lo necesitas
+full_access: false  # evita uso de full y selective juntos
+
+# Define aquí solo si necesitas acceso específico a dispositivos
+#devices:
+#  - /dev/some-device
+
 options:
   token: "TU_TOKEN_DE_EZVIZ"
+
 schema:
   token: str
