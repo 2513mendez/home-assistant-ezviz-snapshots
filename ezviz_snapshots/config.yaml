@@ -1,25 +1,25 @@
 name: EZVIZ Snapshot Grabber
 version: 1.0.1
 slug: ezviz_snapshots
-description: Obtiene snapshots de cámaras EZVIZ y los guarda en www/snapshots.
+description: Obtiene snapshots de cámaras EZVIZ y los guarda en www/snapshots
 arch:
   - aarch64
 image: "ghcr.io/2513mendez/ezvizsnapshots"
 startup: once
 boot: manual
-
-# No uses addon_config ni homeassistant_config si usas config
-# Tampoco declares full y selective device access juntos
-
-host_network: true  # solo si realmente lo necesitas
-full_access: false  # evita uso de full y selective juntos
-
-# Define aquí solo si necesitas acceso específico a dispositivos
-#devices:
-#  - /dev/some-device
+host_network: false
 
 options:
-  token: "TU_TOKEN_DE_EZVIZ"
+  app_key: ""
+  app_secret: ""
+  token: ""
+  camaras:
+    - nombre: ""
+      serial: ""
 
 schema:
+  app_key: str
+  app_secret: str
   token: str
+  camaras:
+    - dict(nombre=str, serial=str)

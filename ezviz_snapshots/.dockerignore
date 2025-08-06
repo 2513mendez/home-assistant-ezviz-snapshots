@@ -1,0 +1,24 @@
+# Ignora entornos y configuración local
+.vscode/
+.idea/
+*.swp
+
+# Ignora archivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Ignora cachés de Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Ignora control de versiones
+.git/
+.gitignore
+
+# Ignora archivos que no necesitas en producción
+*.log
+*.bak
+*.tmp

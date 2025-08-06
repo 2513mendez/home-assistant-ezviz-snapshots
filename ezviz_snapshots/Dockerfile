@@ -1,9 +1,17 @@
-FROM alpine:3.18
+# Usa imagen base con Python 3
+FROM python:3.11-slim
 
-RUN apk add --no-cache python3 py3-pip curl bash jq
-RUN pip3 install requests
+# Establece el directorio de trabajo
+WORKDIR /config
 
-COPY run.sh /run.sh
-RUN chmod +x /run.sh
+# Copia todos los archivos del add-on al contenedor
+COPY . .
 
-CMD [ "/run.sh" ]
+# Instala las dependencias necesarias
+RUN pip install requests
+
+# Da permisos de ejecución al script principal
+RUN chmod +x /config/run.sh
+
+# Comando de inicio
+CMD ["/config/run.sh"]
