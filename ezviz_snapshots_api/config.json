@@ -23,7 +23,7 @@
       }
     ]
   },
-  "image": "ghcr.io/2513mendez/ezvizsnapshotsapi:1.0.0",
+  "image": "ghcr.io/2513mendez/ezviz-snapshots-api:1.0.0",
   "init": false,
   "host_network": false,
   "map": ["config:rw"],

@@ -4,7 +4,7 @@ slug: ezviz_snapshots
 description: Obtiene snapshots de cámaras EZVIZ y los guarda en www/snapshots
 arch:
   - aarch64
-image: "ghcr.io/2513mendez/ezvizsnapshotsapi:1.0.0"
+image: "ghcr.io/2513mendez/ezviz-snapshots-api:1.0.0"
 startup: once
 boot: manual
 host_network: false
