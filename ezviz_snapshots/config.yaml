@@ -14,7 +14,7 @@ options:
   app_secret: ""
   token: ""
   camaras:
-    - nombre: ""
+    - name: ""
       serial: ""
 
 schema:
@@ -22,4 +22,5 @@ schema:
   app_secret: str
   token: str
   camaras:
-    - dict(nombre=str, serial=str)
+    - name: str
+      serial: str
