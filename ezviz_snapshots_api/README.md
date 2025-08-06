@@ -1,4 +1,4 @@
-# EZVIZ Snapshot Grabber
+# EZVIZ Snapshots
 
 Este add-on de Home Assistant permite obtener snapshots de cámaras EZVIZ usando la API oficial. Los snapshots se guardan automáticamente en `/config/www/snapshots`.
 

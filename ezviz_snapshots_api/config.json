@@ -1,0 +1,31 @@
+{
+  "name": "EZVIZ Snapshots",
+  "version": "1.0.1",
+  "slug": "ezviz_snapshots_api",
+  "description": "Captura snapshots de cámaras EZVIZ usando la API oficial.",
+  "startup": "once",
+  "boot": "manual",
+  "options": {
+    "app_key": "",
+    "app_secret": "",
+    "token": "",
+    "camaras": []
+  },
+  "schema": {
+    "app_key": "str",
+    "app_secret": "str",
+    "token": "str?",
+    "camaras": [
+      {
+        "nombre": "str",
+        "serial": "str"
+      }
+    ]
+  },
+  "image": "ghcr.io/2513mendez/ezviz_snapshots_api:1.0.0",
+  "init": false,
+  "host_network": false,
+  "map": ["config:rw"],
+  "privileged": [],
+  "apparmor": false
+}
