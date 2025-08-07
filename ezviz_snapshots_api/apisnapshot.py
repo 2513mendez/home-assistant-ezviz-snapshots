@@ -24,7 +24,8 @@ def obtener_snapshots(config):
 
         print(f"📸 Solicitando snapshot de cámara '{nombre}' ({serial}) en canal {canal}...")
 
-        url = "https://open.ys7.com/api/lapp/device/capture"
+        #url = "https://open.ys7.com/api/lapp/device/capture"
+        url = "https://open.ezvizlife.com/api/lapp/device/capture"
         data = {
             "accessToken": token,
             "deviceSerial": serial,
