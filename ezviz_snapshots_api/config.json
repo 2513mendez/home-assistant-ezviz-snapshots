@@ -1,6 +1,6 @@
 {
   "name": "EZVIZ Snapshots",
-  "version": "1.0.1",
+  "version": "1.0.0",
   "slug": "ezviz_snapshots_api_local",
   "description": "Captura snapshots de cámaras EZVIZ usando la API oficial (imagen local).",
   "arch": [
