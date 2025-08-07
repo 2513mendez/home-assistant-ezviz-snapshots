@@ -1,19 +1,16 @@
-FROM python:3.11-slim
+ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:latest
+FROM ${BUILD_FROM}
 
-# Establecer el directorio de trabajo
-WORKDIR /config
+# Instalar Python3 + requests desde apk (sin pip)
+RUN apk add --no-cache python3 py3-requests
 
-# Copiar los archivos del addon al contenedor
-COPY . .
+# Copiar scripts
+COPY run.sh /run.sh
+COPY apisnapshot.py /config/apisnapshot.py
+COPY apiaccesstoken.py /config/apiaccesstoken.py
 
-# Asegurar permisos de ejecución para el script
-RUN chmod +x /config/run.sh
+# Permisos
+RUN chmod a+x /run.sh
 
-# Convertir el script a formato UNIX (evita errores CRLF si se edita en Windows)
-RUN apt-get update && apt-get install -y dos2unix && dos2unix /config/run.sh && apt-get purge -y dos2unix && apt-get autoremove -y
-
-# Instalar dependencias necesarias
-RUN pip install requests
-
-# Ejecutar el script al iniciar el contenedor
-CMD ["/bin/sh", "/config/run.sh"]
+# Entry Point
+CMD [ "/run.sh" ]
