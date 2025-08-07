@@ -1,5 +1,5 @@
 name: EZVIZ Snapshot Grabber
-version: 1.0.1
+version: 1.0.3
 slug: ezviz_snapshots
 description: Obtiene snapshots de cámaras EZVIZ y los guarda en www/snapshots
 arch:
