@@ -23,7 +23,7 @@
       }
     ]
   },
-  "image": "vmn2513/ezviz-snapshots-api:1.0.0",
+  "image": "vmn2513/ezvizsnapapi:1.0.0",
   "init": false,
   "host_network": false,
   "map": ["config:rw"],
