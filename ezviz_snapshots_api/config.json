@@ -29,7 +29,6 @@
       }
     ]
   },
-  "image": "vmn2513/addon1",
   "init": false,
   "host_network": false,
   "map": [
