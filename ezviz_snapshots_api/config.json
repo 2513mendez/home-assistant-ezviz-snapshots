@@ -1,6 +1,6 @@
 {
   "name": "EZVIZ Snapshots API/MQTT",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "slug": "ezviz_snapshots_core",
   "description": "Captura snapshots de cámaras EZVIZ usando la API oficial. Publica automáticamente la URL de la imagen en el topic MQTT: ezviz/snapshot/<nombre_camara>. Puedes configurar si el mensaje se publica con el flag retain desde la UI.",
   "arch": [
