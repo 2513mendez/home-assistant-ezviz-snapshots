@@ -1,22 +1,25 @@
 import os
 import json
 import requests
+import paho.mqtt.publish as publish
 
 def obtener_snapshots(config):
     token = config.get("token")
+    retain = config.get("retain", True)
+    camaras = config.get("camaras", [])
+
     if not token:
         print("❌ No se ha proporcionado un token de acceso.")
         return
 
-    camaras = config.get("camaras", [])
     if not camaras:
         print("❌ No se han definido cámaras en la configuración.")
         return
 
     for camara in camaras:
-        nombre = camara.get("nombre", "Cámara desconocida")
+        nombre = camara.get("nombre", "camara")
         serial = camara.get("serial")
-        canal = camara.get("channel", 1)  # Valor por defecto: 1
+        canal = camara.get("channel", 1)
 
         if not serial:
             print(f"⚠️ Cámara '{nombre}' no tiene número de serie definido. Saltando...")
@@ -24,8 +27,7 @@ def obtener_snapshots(config):
 
         print(f"📸 Solicitando snapshot de cámara '{nombre}' ({serial}) en canal {canal}...")
 
-        #url = "https://open.ys7.com/api/lapp/device/capture"
-        url = "https://open.ezvizlife.com/api/lapp/device/capture"
+        url = "https://open.ys7.com/api/lapp/device/capture"
         data = {
             "accessToken": token,
             "deviceSerial": serial,
@@ -40,11 +42,24 @@ def obtener_snapshots(config):
             if resultado.get("code") == "200":
                 imagen_url = resultado.get("data", {}).get("picUrl")
                 print(f"✅ Snapshot obtenido: {imagen_url}")
+
+                topic = f"ezviz/snapshot/{nombre.lower().replace(' ', '_')}"
+                print(f"📤 Publicando en MQTT: {topic} (retain={retain})")
+
+                publish.single(
+                    topic,
+                    payload=imagen_url,
+                    hostname="localhost",
+                    retain=retain
+                )
+
             else:
                 print(f"❌ Error al capturar snapshot: {resultado}")
 
         except requests.exceptions.RequestException as e:
             print(f"❌ Error de red al capturar snapshot de '{nombre}': {e}")
+        except Exception as ex:
+            print(f"❌ Error inesperado en '{nombre}': {ex}")
 
 def cargar_config():
     config_path = "/data/options.json"
@@ -61,3 +76,4 @@ if __name__ == "__main__":
     if config:
         obtener_snapshots(config)
     print("✅ Proceso completado.")
+
