@@ -25,7 +25,8 @@
     "camaras": [
       {
         "nombre": "str",
-        "serial": "str"
+        "serial": "str",
+        "channel": "int?"
       }
     ]
   },

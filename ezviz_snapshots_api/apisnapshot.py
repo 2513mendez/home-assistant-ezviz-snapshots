@@ -1,75 +1,62 @@
-import requests
 import os
 import json
-from datetime import datetime
+import requests
 
-# === Leer opciones desde Home Assistant ===
-with open('/data/options.json', 'r') as f:
-    options = json.load(f)
+def obtener_snapshots(config):
+    token = config.get("token")
+    if not token:
+        print("❌ No se ha proporcionado un token de acceso.")
+        return
 
-app_key = options.get('app_key')
-app_secret = options.get('app_secret')
-access_token = options.get('token')
-camaras = options.get('camaras', [])
+    camaras = config.get("camaras", [])
+    if not camaras:
+        print("❌ No se han definido cámaras en la configuración.")
+        return
 
-# === Obtener token si no se proporcionó ===
-if not access_token:
-    print("🔐 Solicitando nuevo access_token...")
-    url_token = "https://open.ezvizlife.com/api/lapp/token/get"
-    payload = {
-        "appKey": app_key,
-        "appSecret": app_secret
-    }
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
+    for camara in camaras:
+        nombre = camara.get("nombre", "Cámara desconocida")
+        serial = camara.get("serial")
+        canal = camara.get("channel", 1)  # Valor por defecto: 1
 
-    response = requests.post(url_token, data=payload, headers=headers)
-    if response.status_code == 200:
-        data = response.json()
-        if data.get("code") == "200":
-            access_token = data["data"]["accessToken"]
-            print("✅ Access token obtenido")
-        else:
-            print("❌ Error al obtener token:", data.get("msg"))
-            exit(1)
-    else:
-        print("❌ Fallo en la petición de token:", response.status_code)
-        exit(1)
+        if not serial:
+            print(f"⚠️ Cámara '{nombre}' no tiene número de serie definido. Saltando...")
+            continue
 
-# === Usar el token para capturar snapshots ===
-for cam in camaras:
-    nombre = cam.get("nombre")
-    serial = cam.get("serial")
+        print(f"📸 Solicitando snapshot de cámara '{nombre}' ({serial}) en canal {canal}...")
 
-    print(f"\n📸 Solicitando snapshot de cámara '{nombre}' ({serial})...")
-
-    url = "https://open.ezvizlife.com/api/lapp/device/capture"
-    payload = {
-        "accessToken": access_token,
-        "deviceSerial": serial,
-        "channelNo": 1
-    }
-
-    headers = {
-        "Content-Type": "application/x-www-form-urlencoded"
-    }
-
-    response = requests.post(url, data=payload, headers=headers)
-
-    if response.status_code == 200 and response.json().get("code") == "200":
-        pic_url = response.json()["data"]["picUrl"]
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        nombre_archivo = f"snapshot_{nombre}_{timestamp}.jpg"
-        ruta_destino = f"/config/www/snapshots/{nombre_archivo}"
+        url = "https://open.ys7.com/api/lapp/device/capture"
+        data = {
+            "accessToken": token,
+            "deviceSerial": serial,
+            "channelNo": canal
+        }
 
         try:
-            imagen = requests.get(pic_url)
-            os.makedirs("/config/www/snapshots", exist_ok=True)
-            with open(ruta_destino, "wb") as f:
-                f.write(imagen.content)
-            print(f"✅ Snapshot guardado en {ruta_destino}")
-        except Exception as e:
-            print(f"❌ Error al guardar imagen: {e}")
-    else:
-        print(f"❌ Error al capturar snapshot: {response.json()}")
+            response = requests.post(url, data=data)
+            response.raise_for_status()
+            resultado = response.json()
+
+            if resultado.get("code") == "200":
+                imagen_url = resultado.get("data", {}).get("picUrl")
+                print(f"✅ Snapshot obtenido: {imagen_url}")
+            else:
+                print(f"❌ Error al capturar snapshot: {resultado}")
+
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Error de red al capturar snapshot de '{nombre}': {e}")
+
+def cargar_config():
+    config_path = "/data/options.json"
+    if not os.path.exists(config_path):
+        print("❌ No se encontró el archivo de configuración.")
+        return None
+
+    with open(config_path, "r") as f:
+        return json.load(f)
+
+if __name__ == "__main__":
+    print("🔄 Ejecutando captura de snapshots EZVIZ...")
+    config = cargar_config()
+    if config:
+        obtener_snapshots(config)
+    print("✅ Proceso completado.")
