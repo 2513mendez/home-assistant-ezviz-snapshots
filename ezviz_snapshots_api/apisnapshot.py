@@ -1,6 +1,8 @@
 import os
 import json
 import time
+import unicodedata
+import re
 from datetime import datetime, timezone
 import requests
 import paho.mqtt.publish as publish
@@ -17,7 +19,13 @@ AREADOMAIN_FALLBACK = "https://open.ezvizlife.com"
 MQTT_HOST_DEFAULT = "core-mosquitto"
 MQTT_PORT_DEFAULT = 1883
 
-# ---------- Utilidades de configuración y token ----------
+# ---------- Utilidades ----------
+
+def slugify(s: str) -> str:
+    """Convierte a topic ASCII-safe: sin tildes, minúsculas, _ en vez de espacios."""
+    s = unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode("ascii")
+    s = s.lower().replace(" ", "_")
+    return re.sub(r"[^a-z0-9_-]", "_", s)
 
 def load_options():
     if not os.path.exists(OPTIONS_PATH):
@@ -98,20 +106,18 @@ def capture_once(capture_url, serial, canal, token, quality=None):
 
 def capture_with_retry(capture_url, serial, canal, token, quality=None, retries=1, backoff=2):
     res = capture_once(capture_url, serial, canal, token, quality)
+    # Reintentos por red/timeouts/errores dispositivo
     if res.get("code") in ("neterr", "20006", "20008", "60017") and retries > 0:
         print(f"⏳ Reintentando ({retries}) tras {backoff}s por {res.get('code')}...")
         time.sleep(backoff)
         return capture_with_retry(capture_url, serial, canal, token, quality, retries-1, backoff*2)
-    # Fallback: si quality inválida (10001), reintentar sin quality 1 vez
+    # Fallback si quality inválida
     if res.get("code") == "10001" and quality is not None and retries > 0:
         print("⚠️ 'Invalid quality' → reintentando sin 'quality'...")
         return capture_with_retry(capture_url, serial, canal, token, None, retries-1, backoff)
     return res
 
 # ---------- MQTT ----------
-
-def slugify(s):
-    return "".join(c if c.isalnum() or c in "-_" else "_" for c in s.lower())
 
 def publish_mqtt(nombre, payload_dict, retain, host, port, user, password):
     topic = f"ezviz/snapshot/{slugify(nombre)}"
@@ -139,7 +145,7 @@ def run():
     app_key    = cfg.get("app_key")
     app_secret = cfg.get("app_secret")
     retain     = bool(cfg.get("retain", True))
-    quality_g  = cfg.get("quality", 0)
+    quality_g  = cfg.get("quality", 0)            # global default (0 = Smooth)
     camaras    = cfg.get("camaras", [])
 
     mqtt_host  = cfg.get("mqtt_host", MQTT_HOST_DEFAULT)
@@ -151,6 +157,7 @@ def run():
         print("❌ No hay cámaras definidas.")
         return
 
+    # Token + areaDomain (cache o nuevo)
     cache = load_cached_token()
     if not cache:
         cache = request_new_token(app_key, app_secret)
@@ -205,7 +212,7 @@ def run():
             res = capture_with_retry(capture_url, serial, canal, token, q_cam)
             results.append((nombre, serial, canal, q_cam, res))
 
-    # 3) Publicación MQTT (JSON rico)
+    # 3) Publicación MQTT (JSON)
     now_iso = datetime.now(timezone.utc).isoformat()
     for (nombre, serial, canal, q_cam, res) in results:
         code = res.get("code")
