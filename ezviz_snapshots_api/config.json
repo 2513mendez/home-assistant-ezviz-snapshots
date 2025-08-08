@@ -1,8 +1,8 @@
 {
   "name": "EZVIZ Snapshots API/MQTT",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "slug": "ezviz_snapshots_core",
-  "description": "Captura snapshots de cámaras EZVIZ usando la API oficial. Publica automáticamente la URL de la imagen en el topic MQTT: ezviz/snapshot/<nombre_camara>. Puedes configurar si el mensaje se publica con el flag retain desde la UI.",
+  "description": "Captura snapshots de cámaras EZVIZ usando la API oficial. Publica JSON por MQTT en ezviz/snapshot/<nombre_camara>. Usa automáticamente el areaDomain del token. 'retain' y 'quality' configurables en la UI.",
   "arch": [
     "armv7",
     "armhf",
@@ -15,15 +15,15 @@
   "options": {
     "app_key": "",
     "app_secret": "",
-    "token": "",
     "retain": true,
+    "quality": 3,
     "camaras": []
   },
   "schema": {
     "app_key": "str",
     "app_secret": "str",
-    "token": "str?",
     "retain": "bool",
+    "quality": "int?",
     "camaras": [
       {
         "nombre": "str",
