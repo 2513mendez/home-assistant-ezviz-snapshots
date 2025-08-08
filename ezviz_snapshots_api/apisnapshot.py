@@ -5,19 +5,19 @@ from datetime import datetime, timezone
 import requests
 import paho.mqtt.publish as publish
 
-# Rutas fijas del add-on
+# Rutas del add-on
 OPTIONS_PATH = "/data/options.json"
 TOKEN_CACHE  = "/data/ezviz_token.json"
 
-# Endpoints base
+# Endpoints
 TOKEN_URL_DEFAULT   = "https://open.ezvizlife.com/api/lapp/token/get"
 AREADOMAIN_FALLBACK = "https://open.ezvizlife.com"
 
-# MQTT por defecto en HA
+# Defaults MQTT (HA)
 MQTT_HOST_DEFAULT = "core-mosquitto"
 MQTT_PORT_DEFAULT = 1883
 
-# ----- Utilidades de configuración y token -----
+# ---------- Utilidades de configuración y token ----------
 
 def load_options():
     if not os.path.exists(OPTIONS_PATH):
@@ -70,12 +70,11 @@ def request_new_token(app_key, app_secret):
             save_cached_token(access, area)
             return {"accessToken": access, "areaDomain": area}
         print(f"❌ Error al obtener token: {data}")
-        return None
     except Exception as e:
         print(f"❌ Error de red al renovar token: {e}")
-        return None
+    return None
 
-# ----- Llamadas a la API de captura -----
+# ---------- Captura ----------
 
 def capture_once(capture_url, serial, canal, token, quality=None):
     payload = {
@@ -98,46 +97,59 @@ def capture_once(capture_url, serial, canal, token, quality=None):
         return {"code": "neterr", "msg": str(e)}
 
 def capture_with_retry(capture_url, serial, canal, token, quality=None, retries=1, backoff=2):
-    """Reintenta en errores de red/timeout y ciertos códigos de dispositivo."""
     res = capture_once(capture_url, serial, canal, token, quality)
     if res.get("code") in ("neterr", "20006", "20008", "60017") and retries > 0:
         print(f"⏳ Reintentando ({retries}) tras {backoff}s por {res.get('code')}...")
         time.sleep(backoff)
         return capture_with_retry(capture_url, serial, canal, token, quality, retries-1, backoff*2)
+    # Fallback: si quality inválida (10001), reintentar sin quality 1 vez
+    if res.get("code") == "10001" and quality is not None and retries > 0:
+        print("⚠️ 'Invalid quality' → reintentando sin 'quality'...")
+        return capture_with_retry(capture_url, serial, canal, token, None, retries-1, backoff)
     return res
 
-# ----- MQTT -----
-
-def publish_mqtt(nombre, payload_dict, retain, host=MQTT_HOST_DEFAULT, port=MQTT_PORT_DEFAULT):
-    topic = f"ezviz/snapshot/{slugify(nombre)}"
-    try:
-        publish.single(topic, payload=json.dumps(payload_dict), hostname=host, port=port, retain=retain)
-        print(f"📤 MQTT OK -> {topic}")
-    except Exception as e:
-        print(f"⚠️ Error publicando en MQTT ({topic}): {e}")
+# ---------- MQTT ----------
 
 def slugify(s):
     return "".join(c if c.isalnum() or c in "-_" else "_" for c in s.lower())
 
-# ----- Flujo principal -----
+def publish_mqtt(nombre, payload_dict, retain, host, port, user, password):
+    topic = f"ezviz/snapshot/{slugify(nombre)}"
+    try:
+        auth = {"username": user, "password": password} if user else None
+        publish.single(
+            topic,
+            payload=json.dumps(payload_dict),
+            hostname=host,
+            port=port,
+            auth=auth,
+            retain=retain
+        )
+        print(f"📤 MQTT OK -> {topic}")
+    except Exception as e:
+        print(f"⚠️ Error publicando en MQTT ({topic}): {e}")
+
+# ---------- Flujo principal ----------
 
 def run():
     cfg = load_options()
     if not cfg:
         return
 
-    app_key   = cfg.get("app_key")
-    app_secret= cfg.get("app_secret")
-    retain    = bool(cfg.get("retain", True))
-    quality   = cfg.get("quality", 3)
-    camaras   = cfg.get("camaras", [])
+    app_key    = cfg.get("app_key")
+    app_secret = cfg.get("app_secret")
+    retain     = bool(cfg.get("retain", True))
+    quality_g  = cfg.get("quality", 0)
+    camaras    = cfg.get("camaras", [])
+
+    mqtt_host  = cfg.get("mqtt_host", MQTT_HOST_DEFAULT)
+    mqtt_port  = int(cfg.get("mqtt_port", MQTT_PORT_DEFAULT))
+    mqtt_user  = cfg.get("mqtt_user", "")
+    mqtt_pass  = cfg.get("mqtt_password", "")
 
     if not camaras:
         print("❌ No hay cámaras definidas.")
         return
-
-    mqtt_host = os.getenv("MQTT_BROKER", MQTT_HOST_DEFAULT)
-    mqtt_port = int(os.getenv("MQTT_PORT", MQTT_PORT_DEFAULT))
 
     cache = load_cached_token()
     if not cache:
@@ -153,25 +165,25 @@ def run():
     # 1) Primer intento con token actual
     need_refresh = False
     results = []
-
     for cam in camaras:
         nombre = cam.get("nombre", "camara")
         serial = cam.get("serial")
         canal  = cam.get("channel", 1)
+        q_cam  = cam.get("quality", quality_g)  # por cámara > global
+
         if not serial:
             print(f"⚠️ Cámara '{nombre}' sin serial. Saltando…")
             continue
 
-        print(f"📸 '{nombre}' ({serial}) canal {canal} | quality={quality} | area={area}")
-        res = capture_with_retry(capture_url, serial, canal, token, quality)
-        results.append((nombre, serial, canal, res))
-
+        print(f"📸 '{nombre}' ({serial}) canal {canal} | quality={q_cam} | area={area}")
+        res = capture_with_retry(capture_url, serial, canal, token, q_cam)
+        results.append((nombre, serial, canal, q_cam, res))
         if res.get("code") == "10002":
             print(f"⚠️ Token inválido/caducado detectado en '{nombre}'.")
             need_refresh = True
             break
 
-    # 2) Si el token caducó, renovar y reintentar todas
+    # 2) Si caducó token, renovar y reintentar todas
     if need_refresh:
         cache = request_new_token(app_key, app_secret)
         if not cache:
@@ -186,15 +198,16 @@ def run():
             nombre = cam.get("nombre", "camara")
             serial = cam.get("serial")
             canal  = cam.get("channel", 1)
+            q_cam  = cam.get("quality", quality_g)
             if not serial:
                 continue
             print(f"🔁 Reintentando '{nombre}' con token nuevo…")
-            res = capture_with_retry(capture_url, serial, canal, token, quality)
-            results.append((nombre, serial, canal, res))
+            res = capture_with_retry(capture_url, serial, canal, token, q_cam)
+            results.append((nombre, serial, canal, q_cam, res))
 
     # 3) Publicación MQTT (JSON rico)
     now_iso = datetime.now(timezone.utc).isoformat()
-    for (nombre, serial, canal, res) in results:
+    for (nombre, serial, canal, q_cam, res) in results:
         code = res.get("code")
         if code == "200":
             pic_url = res.get("data", {}).get("picUrl")
@@ -202,14 +215,14 @@ def run():
                 "name": nombre,
                 "serial": serial,
                 "channel": canal,
-                "quality": quality,
+                "quality": q_cam,
                 "picUrl": pic_url,
                 "ts": now_iso,
                 "areaDomain": area,
                 "code": code
             }
             print(f"✅ Snapshot '{nombre}': {pic_url}")
-            publish_mqtt(nombre, payload, retain, host=mqtt_host, port=mqtt_port)
+            publish_mqtt(nombre, payload, retain, mqtt_host, mqtt_port, mqtt_user, mqtt_pass)
         else:
             print(f"❌ Error en '{nombre}': {res}")
 
