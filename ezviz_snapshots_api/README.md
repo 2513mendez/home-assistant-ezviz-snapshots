@@ -1,24 +1,39 @@
-# EZVIZ Snapshots API
+# EZVIZ Snapshots API/MQTT (Multi-account)
 
-Este add-on de Home Assistant permite obtener snapshots de cámaras EZVIZ usando la API oficial. Los snapshots se guardan automáticamente en `/config/www/snapshots`.
+Add-on para Home Assistant que obtiene snapshots de cámaras EZVIZ usando la API oficial y publica un JSON por MQTT en:
 
-## Configuración
+## Características
+- Soporta **múltiples cuentas** EZVIZ (cada una con su token y `areaDomain`).
+- Cachea **un token por cuenta** en `/data/ezviz_tokens/<account_id>.json`.
+- Publica payload con el campo `account` para facilitar trazas y reglas.
+- Logs con **timestamp** y opción `debug` para alta verbosidad.
+- Compatible con modo **legacy** (una sola cuenta con `app_key` y `app_secret`).
 
-Desde la interfaz de Home Assistant podrás configurar:
+---
 
-- `app_key`: tu App Key oficial de EZVIZ
-- `app_secret`: tu App Secret de EZVIZ
-- `token`: opcional; si no lo defines, se genera automáticamente con `app_key` y `app_secret`
-- `camaras`: lista de cámaras con nombre y número de serie (deviceSerial)
+## Requisitos
+- Broker MQTT accesible desde Home Assistant (por ejemplo, `core-mosquitto`).
+- App Key y App Secret válidos de EZVIZ (una o varias cuentas).
 
-### Ejemplo de configuración en la interfaz:
+---
 
-```yaml
-app_key: "tu_app_key"
-app_secret: "tu_app_secret"
-token: ""
-camaras:
-  - nombre: "salon"
-    serial: "BF2XXXXXXX"
-  - nombre: "entrada"
-    serial: "BF3XXXXXXX"
+## Configuración (UI del add-on)
+
+### Campos principales
+- `retain` (bool): publica mensajes con retain en MQTT (por defecto `true`).
+- `quality` (int, opcional): calidad por defecto si no se especifica a nivel de cuenta/cámara (0=Smooth).
+- `debug` (bool, opcional): activa logs detallados (`true` = modo verboso).
+- `mqtt_*`: conexión al broker MQTT.
+- `accounts` (lista): definición de múltiples cuentas EZVIZ.
+- `camaras` (lista): cámaras a capturar.
+
+---
+
+## Estructura de `accounts`
+```json
+{
+  "id": "cuenta_negocio",
+  "app_key": "AK_XXXXXXXX",
+  "app_secret": "AS_YYYYYYYY",
+  "quality": 1
+}
