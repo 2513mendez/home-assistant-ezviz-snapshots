@@ -1,18 +1,21 @@
-ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
-FROM ${BUILD_FROM}
+# Base de Home Assistant para tu arquitectura (el builder usa la correcta)
+FROM ghcr.io/home-assistant/aarch64-base:latest
 
-# Instalar Python 3 + librerías necesarias desde APK
-RUN apk add --no-cache python3 py3-requests py3-paho-mqtt
+# Paquetes necesarios
+RUN apk add --no-cache \
+    python3 \
+    py3-requests \
+    py3-paho-mqtt \
+    jq
 
 # Copiar scripts al contenedor
 COPY apisnapshot.py /app/apisnapshot.py
-COPY apiaccesstoken.py /app/apiaccesstoken.py
-
-# Copiar run.sh
 COPY run.sh /run.sh
 
-# Permisos
-RUN chmod a+x /run.sh
+# Permisos y preparación
+RUN chmod +x /run.sh && \
+    mkdir -p /data/ezviz_tokens && \
+    echo "Docker image ready"
 
-# Entry point
+# Ejecutar
 CMD [ "/run.sh" ]
