@@ -1,4 +1,4 @@
-# Base de Home Assistant para tu arquitectura (el builder usa la correcta)
+# Base de Home Assistant para tu arquitectura
 FROM ghcr.io/home-assistant/aarch64-base:latest
 
 # Paquetes necesarios

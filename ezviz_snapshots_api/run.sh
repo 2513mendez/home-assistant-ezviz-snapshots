@@ -1,17 +1,14 @@
-#!/bin/sh
+#!/bin/bash
+set -euo pipefail
 
-CONFIG_PATH=/data/options.json
-DEBUG_FLAG=$(jq -r '.debug // false' "$CONFIG_PATH" 2>/dev/null)
-NOW_START=$(date +"%d/%m/%Y %H:%M:%S")
+echo "🔧 Preparando entorno…"
+OPTIONS="/data/options.json"
 
-echo "[$NOW_START] 🔄 Ejecutando captura de snapshots EZVIZ..."
-
-if [ "$DEBUG_FLAG" = "true" ]; then
-    echo "[$NOW_START] 🐞 Modo debug activado (desde options.json)."
-    python3 /app/apisnapshot.py --debug
-else
-    python3 /app/apisnapshot.py
+DEBUG_FLAG="false"
+if [ -f "$OPTIONS" ]; then
+  DEBUG_FLAG=$(jq -r '.debug // false' "$OPTIONS" 2>/dev/null || echo "false")
 fi
 
-NOW_END=$(date +"%d/%m/%Y %H:%M:%S")
-echo "[$NOW_END] ✅ Proceso completado."
+echo "🔄 Ejecutando captura de snapshots EZVIZ (debug=$DEBUG_FLAG)…"
+python3 /app/apisnapshot.py
+echo "✅ Proceso completado."
