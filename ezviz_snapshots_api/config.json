@@ -3,7 +3,13 @@
   "version": "1.2.1",
   "slug": "ezviz_snapshots_core",
   "description": "Captura snapshots de cámaras EZVIZ y publica JSON por MQTT en ezviz/snapshot/<nombre_camara>. Soporta múltiples cuentas (token por cuenta), cache de tokens y logs con modo debug. Configurable desde la UI.",
-  "arch": ["armv7", "armhf", "aarch64", "amd64", "i386"],
+  "arch": [
+    "armv7",
+    "armhf",
+    "aarch64",
+    "amd64",
+    "i386"
+  ],
   "startup": "once",
   "boot": "manual",
   "options": {
@@ -45,7 +51,9 @@
   },
   "init": false,
   "host_network": false,
-  "map": ["config:rw"],
+  "map": [
+    "config:rw"
+  ],
   "privileged": [],
   "apparmor": false
 }
