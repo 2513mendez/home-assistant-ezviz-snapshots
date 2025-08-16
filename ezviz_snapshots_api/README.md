@@ -1,39 +1,46 @@
 # EZVIZ Snapshots API/MQTT (Multi-account)
 
-Add-on para Home Assistant que obtiene snapshots de cámaras EZVIZ usando la API oficial y publica un JSON por MQTT en:
+Publica snapshots de cámaras EZVIZ por MQTT en `ezviz/snapshot/<nombre_camara>`.  
+Soporta **múltiples cuentas** (token por cuenta), **caché de tokens** por cuenta, logs con timestamp y `debug`.
 
-## Características
-- Soporta **múltiples cuentas** EZVIZ (cada una con su token y `areaDomain`).
-- Cachea **un token por cuenta** en `/data/ezviz_tokens/<account_id>.json`.
-- Publica payload con el campo `account` para facilitar trazas y reglas.
-- Logs con **timestamp** y opción `debug` para alta verbosidad.
-- Compatible con modo **legacy** (una sola cuenta con `app_key` y `app_secret`).
+## Configuración (UI)
+- `retain` (bool), `quality` (int), `debug` (bool)
+- MQTT: `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_password`
+- `accounts[]`: lista de cuentas (id, app_key, app_secret, quality?)
+- `camaras[]`: lista de cámaras (nombre, serial, channel, quality?, account)
 
----
-
-## Requisitos
-- Broker MQTT accesible desde Home Assistant (por ejemplo, `core-mosquitto`).
-- App Key y App Secret válidos de EZVIZ (una o varias cuentas).
-
----
-
-## Configuración (UI del add-on)
-
-### Campos principales
-- `retain` (bool): publica mensajes con retain en MQTT (por defecto `true`).
-- `quality` (int, opcional): calidad por defecto si no se especifica a nivel de cuenta/cámara (0=Smooth).
-- `debug` (bool, opcional): activa logs detallados (`true` = modo verboso).
-- `mqtt_*`: conexión al broker MQTT.
-- `accounts` (lista): definición de múltiples cuentas EZVIZ.
-- `camaras` (lista): cámaras a capturar.
-
----
-
-## Estructura de `accounts`
-```json
-{
-  "id": "cuenta_negocio",
-  "app_key": "AK_XXXXXXXX",
-  "app_secret": "AS_YYYYYYYY",
-  "quality": 1
-}
+### Ejemplo UI (2 cuentas, 4 cámaras)
+```yaml
+retain: true
+quality: 0
+debug: false
+mqtt_host: core-mosquitto
+mqtt_port: 1883
+mqtt_user: mqtt_user
+mqtt_password: "********"
+accounts:
+  - id: personal
+    app_key: "AK_xxx"
+    app_secret: "AS_xxx"
+    quality: 0
+  - id: negocio
+    app_key: "AK_yyy"
+    app_secret: "AS_yyy"
+    quality: 1
+camaras:
+  - nombre: "Salón"
+    serial: "BF1659630"
+    channel: 1
+    account: "personal"
+  - nombre: "Mirilla"
+    serial: "BF3289406"
+    channel: 1
+    account: "personal"
+  - nombre: "exterior_frente"
+    serial: "BFXXXX3333"
+    channel: 1
+    account: "negocio"
+  - nombre: "exterior_trasera"
+    serial: "BFXXXX4444"
+    channel: 1
+    account: "negocio"

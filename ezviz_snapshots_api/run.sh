@@ -1,14 +1,4 @@
-#!/bin/bash
-set -euo pipefail
-
-echo "🔧 Preparando entorno…"
-OPTIONS="/data/options.json"
-
-DEBUG_FLAG="false"
-if [ -f "$OPTIONS" ]; then
-  DEBUG_FLAG=$(jq -r '.debug // false' "$OPTIONS" 2>/dev/null || echo "false")
-fi
-
-echo "🔄 Ejecutando captura de snapshots EZVIZ (debug=$DEBUG_FLAG)…"
+#!/bin/sh
+echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [INFO] Ejecutando EZVIZ Snapshots (v1.2.2)…"
 python3 /app/apisnapshot.py
-echo "✅ Proceso completado."
+echo "[$(date -u +"%Y-%m-%dT%H:%M:%SZ")] [INFO] Proceso completado."

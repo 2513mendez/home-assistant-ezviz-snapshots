@@ -12,7 +12,7 @@ RUN apk add --no-cache \
 COPY apisnapshot.py /app/apisnapshot.py
 COPY run.sh /run.sh
 
-# Permisos y preparación
+# Permisos y preparación add-on
 RUN chmod +x /run.sh && \
     mkdir -p /data/ezviz_tokens && \
     echo "Docker image ready"
