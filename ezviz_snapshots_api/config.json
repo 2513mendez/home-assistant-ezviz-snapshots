@@ -1,6 +1,6 @@
 {
   "name": "EZVIZ Snapshots API/MQTT (Multi-account)",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "slug": "ezviz_snapshots_core",
   "description": "Captura snapshots de cámaras EZVIZ y publica JSON por MQTT en ezviz/snapshot/<nombre_camara>. Configurable desde la UI con múltiples cuentas (token por cuenta), caché de tokens, logs con timestamp y modo debug.",
   "arch": [
