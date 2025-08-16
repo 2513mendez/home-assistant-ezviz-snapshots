@@ -29,11 +29,11 @@ accounts:
     quality: 1
 camaras:
   - nombre: "Salón"
-    serial: "BF1659630"
+    serial: "BFXXXXXXXX"
     channel: 1
     account: "personal"
   - nombre: "Mirilla"
-    serial: "BF3289406"
+    serial: "BFXXXXXXXX"
     channel: 1
     account: "personal"
   - nombre: "exterior_frente"

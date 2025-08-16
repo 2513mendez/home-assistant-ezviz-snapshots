@@ -1,7 +1,7 @@
 # build-push.ps1 (modo local para HA Green)
 # 🧱 Compila localmente, actualiza version y genera release.yaml (sin subir a Docker Hub)
 
-$version = "1.2.2"
+$version = "1.2.3"
 $configFile = "config.json"
 $releaseFile = "release.yaml"
 

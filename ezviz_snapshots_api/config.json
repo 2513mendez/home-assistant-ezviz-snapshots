@@ -1,8 +1,8 @@
 {
   "name": "EZVIZ Snapshots API/MQTT (Multi-account)",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "slug": "ezviz_snapshots_core",
-  "description": "Captura snapshots de cámaras EZVIZ y publica JSON por MQTT en ezviz/snapshot/<nombre_camara>. Configurable desde la UI con múltiples cuentas (token por cuenta), caché de tokens, logs con timestamp y modo debug.",
+  "description": "Snapshots de EZVIZ por MQTT. Configurable por UI con dos cuentas (campos dedicados) o lista accounts[]. Token por cuenta, caché y logs con timestamp.",
   "arch": [
     "armv7",
     "armhf",
@@ -20,6 +20,12 @@
     "mqtt_port": 1883,
     "mqtt_user": "",
     "mqtt_password": "",
+    "account1_id": "",
+    "account1_app_key": "",
+    "account1_app_secret": "",
+    "account2_id": "",
+    "account2_app_key": "",
+    "account2_app_secret": "",
     "accounts": [],
     "camaras": []
   },
@@ -31,6 +37,12 @@
     "mqtt_port": "int",
     "mqtt_user": "str",
     "mqtt_password": "str",
+    "account1_id": "str?",
+    "account1_app_key": "str?",
+    "account1_app_secret": "str?",
+    "account2_id": "str?",
+    "account2_app_key": "str?",
+    "account2_app_secret": "str?",
     "accounts": [
       {
         "id": "str",
