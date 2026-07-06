@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.3.1 (2026-07-06)
+
+- **Limpieza automática de cámaras eliminadas o renombradas**: el add-on
+  recuerda las cámaras publicadas (`/data/known_cameras.json`, por serial) y,
+  si una desaparece de `camaras[]` o cambia de `nombre` (slug), borra sus
+  mensajes retenidos y su config de MQTT Discovery (payload vacío) → la
+  entidad huérfana desaparece de HA y el broker queda limpio, sin pasos
+  manuales.
+
 ## 1.3.0 (2026-07-06)
 
 ### Nuevo

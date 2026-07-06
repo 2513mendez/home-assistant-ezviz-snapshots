@@ -23,10 +23,11 @@ from datetime import datetime, timezone
 import requests
 import paho.mqtt.client as mqtt
 
-VERSION = "1.3.0"
+VERSION = "1.3.1"
 
 OPTIONS_PATH = "/data/options.json"
 TOKENS_DIR   = "/data/ezviz_tokens"
+KNOWN_PATH   = "/data/known_cameras.json"
 
 TOKEN_URL_DEFAULT   = "https://open.ezvizlife.com/api/lapp/token/get"
 AREADOMAIN_FALLBACK = "https://open.ezvizlife.com"
@@ -284,6 +285,56 @@ def publish_discovery(mq, cam, prefix, image_mode):
 
 
 # --------------------------------------------------------------------------
+# Limpieza de cámaras eliminadas/renombradas
+# --------------------------------------------------------------------------
+
+def load_known_cameras():
+    try:
+        with open(KNOWN_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_known_cameras(current):
+    try:
+        with open(KNOWN_PATH, "w", encoding="utf-8") as f:
+            json.dump(current, f, indent=2)
+    except Exception as e:
+        log(f"No se pudo guardar {KNOWN_PATH}: {e}", "WARN")
+
+
+def cleanup_stale_cameras(mq, camaras, prefix):
+    """Si una cámara desaparece de la config o cambia de nombre (slug), borra
+    sus topics retenidos y su config de discovery (payload vacío) para que la
+    entidad y los mensajes viejos no queden huérfanos en HA/broker."""
+    known = load_known_cameras()
+    current = {}
+    for cam in camaras:
+        serial = cam.get("serial")
+        if serial:
+            current[serial] = {"slug": slugify(cam.get("nombre", "camara")),
+                               "channel": int(cam.get("channel", 1))}
+
+    for serial, meta in known.items():
+        old_slug = meta.get("slug")
+        if not old_slug:
+            continue
+        cur = current.get(serial)
+        if cur and cur["slug"] == old_slug:
+            continue
+        motivo = "renombrada" if cur else "eliminada"
+        log(f"🧹 Cámara {serial} {motivo}: limpiando topics retenidos de '{old_slug}'")
+        for t in (f"{prefix}/image/ezviz_{old_slug}/config",
+                  f"{BASE_TOPIC}/{old_slug}",
+                  f"{BASE_TOPIC}/{old_slug}/image"):
+            mq.publish(t, "", retain=True)
+
+    save_known_cameras(current)
+
+
+# --------------------------------------------------------------------------
 # Cuentas
 # --------------------------------------------------------------------------
 
@@ -442,6 +493,8 @@ def run():
     except Exception as e:
         log(f"No se pudo conectar a MQTT: {e}", "ERROR")
         return
+
+    cleanup_stale_cameras(mq, camaras, disc_pref)
 
     if discovery:
         for cam in camaras:
