@@ -1,21 +1,18 @@
-# Base de Home Assistant para tu arquitectura
-FROM ghcr.io/home-assistant/aarch64-base:latest
+# El Supervisor inyecta BUILD_FROM con la imagen base de la arquitectura
+# destino (por eso config.json puede declarar las 5 archs).
+ARG BUILD_FROM=ghcr.io/home-assistant/aarch64-base:latest
+FROM ${BUILD_FROM}
 
 # Paquetes necesarios
 RUN apk add --no-cache \
     python3 \
     py3-requests \
-    py3-paho-mqtt \
-    jq
+    py3-paho-mqtt
 
 # Copiar scripts al contenedor
 COPY apisnapshot.py /app/apisnapshot.py
 COPY run.sh /run.sh
 
-# Permisos y preparación add-on
-RUN chmod +x /run.sh && \
-    mkdir -p /data/ezviz_tokens && \
-    echo "Docker image ready"
+RUN chmod +x /run.sh
 
-# Ejecutar
 CMD [ "/run.sh" ]

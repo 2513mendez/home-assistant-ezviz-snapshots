@@ -1,0 +1,57 @@
+configuration:
+  interval_minutes:
+    name: Intervalo (minutos)
+    description: >-
+      Minutos entre ciclos de snapshots. 0 = una sola pasada y salir
+      (comportamiento clásico, para lanzarlo desde una automatización).
+  retain:
+    name: Retained MQTT
+    description: Publicar los mensajes con retain (recomendado).
+  quality:
+    name: Calidad global
+    description: Calidad del snapshot (0-3). Se puede sobreescribir por cuenta/cámara.
+  debug:
+    name: Debug
+    description: Logs detallados.
+  discovery:
+    name: MQTT Discovery
+    description: Crear automáticamente entidades image.* en Home Assistant.
+  discovery_prefix:
+    name: Prefijo de discovery
+    description: Normalmente "homeassistant".
+  image_mode:
+    name: Modo de imagen
+    description: >-
+      url = la entidad usa el picUrl del cloud EZVIZ. download = el add-on
+      descarga el JPEG y lo publica por MQTT (local, no caduca).
+  mqtt_source:
+    name: Origen de credenciales MQTT
+    description: >-
+      auto = usar el broker/credenciales del servicio MQTT del Supervisor
+      (add-on Mosquitto) si está disponible; manual = usar siempre mqtt_*.
+  mqtt_host:
+    name: Host MQTT (manual)
+  mqtt_port:
+    name: Puerto MQTT
+  mqtt_user:
+    name: Usuario MQTT
+  mqtt_password:
+    name: Contraseña MQTT
+  account1_id:
+    name: Cuenta 1 · ID
+  account1_app_key:
+    name: Cuenta 1 · App Key
+  account1_app_secret:
+    name: Cuenta 1 · App Secret
+  account2_id:
+    name: Cuenta 2 · ID
+  account2_app_key:
+    name: Cuenta 2 · App Key
+  account2_app_secret:
+    name: Cuenta 2 · App Secret
+  accounts:
+    name: Cuentas (avanzado)
+    description: Lista de cuentas adicionales (id, app_key, app_secret, quality?).
+  camaras:
+    name: Cámaras
+    description: Lista de cámaras (nombre, serial, channel, quality?, account).
