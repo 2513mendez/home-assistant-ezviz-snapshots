@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 import requests
 import paho.mqtt.client as mqtt
 
-VERSION = "1.4.0"
+VERSION = "1.5.0"
 
 OPTIONS_PATH = "/data/options.json"
 TOKENS_DIR   = "/data/ezviz_tokens"
@@ -36,6 +36,10 @@ MQTT_HOST_DEFAULT = "core-mosquitto"
 MQTT_PORT_DEFAULT = 1883
 
 BASE_TOPIC = "ezviz/snapshot"
+# Comando de refresco bajo demanda: publicar en este topic (payload = slug de
+# la cámara, "all" o vacío = todas) fuerza un ciclo inmediato sin esperar al
+# intervalo. Lo usa HA p.ej. al sonar el timbre (mqtt.publish, retain OFF).
+CMD_TOPIC  = "ezviz/snapshot/refresh"
 
 # Margen antes de la caducidad real del token para renovarlo proactivamente
 TOKEN_EXPIRY_MARGIN_S = 3600
@@ -221,8 +225,9 @@ def download_image(pic_url, debug=False):
 # --------------------------------------------------------------------------
 
 class Mqtt:
-    def __init__(self, host, port, user, password, debug=False):
+    def __init__(self, host, port, user, password, debug=False, on_cmd=None):
         self.debug = debug
+        self.on_cmd = on_cmd
         self._connected = threading.Event()
         self._connect_ok = False
         try:  # paho-mqtt 2.x
@@ -230,6 +235,8 @@ class Mqtt:
         except AttributeError:  # paho-mqtt 1.x
             self.client = mqtt.Client(client_id="ezviz_snapshots")
         self.client.on_connect = self._on_connect
+        if on_cmd:
+            self.client.on_message = self._on_message
         if user:
             self.client.username_pw_set(user, password)
         self.client.connect(host, port, keepalive=60)
@@ -243,7 +250,16 @@ class Mqtt:
     def _on_connect(self, client, userdata, flags, rc, properties=None):
         # paho 1.x: rc es int · paho 2.x: rc es ReasonCode
         self._connect_ok = (rc == 0) if isinstance(rc, int) else (not rc.is_failure)
+        # Suscripción aquí para que las RECONEXIONES de paho re-suscriban solas
+        if self._connect_ok and self.on_cmd:
+            client.subscribe(CMD_TOPIC, qos=0)
         self._connected.set()
+
+    def _on_message(self, client, userdata, msg):
+        try:
+            self.on_cmd(msg.payload.decode("utf-8", "ignore"))
+        except Exception as e:
+            log(f"Error procesando comando MQTT: {e}", "WARN")
 
     def publish(self, topic, payload, retain=True):
         try:
@@ -399,10 +415,12 @@ def get_token(acc_map, tokens, acc_id, debug=False):
 # --------------------------------------------------------------------------
 
 def snapshot_cycle(cfg, acc_map, tokens, mq, retain, quality_g, image_mode, debug,
-                   save_www=False, save_dir="/homeassistant/www/ezviz"):
+                   save_www=False, save_dir="/homeassistant/www/ezviz", only_slugs=None):
     for cam in cfg.get("camaras", []) or []:
         nombre = cam.get("nombre", "camara")
         slug   = slugify(nombre)
+        if only_slugs is not None and slug not in only_slugs:
+            continue
         serial = cam.get("serial")
         canal  = int(cam.get("channel", 1))
         acc_id = cam.get("account")
@@ -513,8 +531,20 @@ def run():
         m_user = cfg.get("mqtt_user", "")
         m_pass = cfg.get("mqtt_password", "")
 
+    # Refresco bajo demanda vía CMD_TOPIC (p.ej. el timbre de HA)
+    refresh_evt = threading.Event()
+    refresh_req = set()
+    req_lock = threading.Lock()
+
+    def on_cmd(payload):
+        s = slugify(payload.strip()) if payload and payload.strip() else ""
+        with req_lock:
+            refresh_req.add(s if s and s != "all" else "*")
+        refresh_evt.set()
+        log(f"⚡ Comando de refresco recibido ({payload.strip() or 'todas'})")
+
     try:
-        mq = Mqtt(m_host, m_port, m_user, m_pass, debug=debug)
+        mq = Mqtt(m_host, m_port, m_user, m_pass, debug=debug, on_cmd=on_cmd)
     except Exception as e:
         log(f"No se pudo conectar a MQTT: {e}", "ERROR")
         return
@@ -527,14 +557,23 @@ def run():
                 publish_discovery(mq, cam, disc_pref, image_mode)
 
     tokens = {}
+    targets = None  # None = todas; set de slugs = refresco bajo demanda
     try:
         while True:
             snapshot_cycle(cfg, acc_map, tokens, mq, retain, quality_g, image_mode, debug,
-                           save_www=save_www, save_dir=save_dir)
+                           save_www=save_www, save_dir=save_dir, only_slugs=targets)
             if interval_m <= 0:
                 break
-            log(f"⏱️ Próximo ciclo en {interval_m} min.", dbg=True, debug=debug)
-            time.sleep(interval_m * 60)
+            log(f"⏱️ Próximo ciclo en {interval_m} min (o comando en {CMD_TOPIC}).", dbg=True, debug=debug)
+            woke = refresh_evt.wait(timeout=interval_m * 60)
+            if woke:
+                refresh_evt.clear()
+                with req_lock:
+                    req = set(refresh_req)
+                    refresh_req.clear()
+                targets = None if "*" in req else req
+            else:
+                targets = None
     except KeyboardInterrupt:
         pass
     finally:

@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.0 (2026-10-14)
+
+### Nuevo
+- **Refresco bajo demanda por MQTT**: publicar en `ezviz/snapshot/refresh`
+  (payload = slug de la cámara, `all` o vacío = todas; retain OFF) fuerza un
+  ciclo de snapshot inmediato sin esperar al intervalo. El bucle de servicio
+  ahora espera sobre un evento (`Event.wait`) en vez de dormir, y la
+  suscripción se rehace sola en cada reconexión MQTT. Caso de uso: el timbre
+  de HA pide una foto fresca de la entrada al sonar.
+
+
 ## 1.4.0 (2026-10-14)
 
 ### Nuevo

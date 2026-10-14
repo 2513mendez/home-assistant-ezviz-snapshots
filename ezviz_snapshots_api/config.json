@@ -1,6 +1,6 @@
 {
   "name": "EZVIZ Snapshots API/MQTT (Multi-account)",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "slug": "ezviz_snapshots_core",
   "description": "Snapshots de EZVIZ por MQTT con MQTT Discovery (entidades image.* automáticas en HA), modo servicio con intervalo o una pasada, multi-cuenta con token cacheado por cuenta.",
   "arch": [
