@@ -23,7 +23,7 @@ from datetime import datetime, timezone
 import requests
 import paho.mqtt.client as mqtt
 
-VERSION = "1.3.1"
+VERSION = "1.4.0"
 
 OPTIONS_PATH = "/data/options.json"
 TOKENS_DIR   = "/data/ezviz_tokens"
@@ -187,6 +187,23 @@ def capture_with_retry(capture_url, serial, canal, token, quality=None,
             continue
 
         return res
+
+
+def save_image_file(save_dir, slug, img):
+    """Escribe el JPEG en el www de HA (escritura atómica: tmp + rename) para
+    poder usarlo como /local/ezviz/<slug>.jpg en dashboards, wall panels o TV
+    sin abrir ningún stream."""
+    try:
+        os.makedirs(save_dir, exist_ok=True)
+        path = os.path.join(save_dir, f"{slug}.jpg")
+        tmp = path + ".tmp"
+        with open(tmp, "wb") as f:
+            f.write(img)
+        os.replace(tmp, path)
+        return path
+    except Exception as e:
+        log(f"No se pudo guardar {slug}.jpg en {save_dir}: {e}", "WARN")
+        return None
 
 
 def download_image(pic_url, debug=False):
@@ -381,7 +398,8 @@ def get_token(acc_map, tokens, acc_id, debug=False):
 # Ciclo de snapshots
 # --------------------------------------------------------------------------
 
-def snapshot_cycle(cfg, acc_map, tokens, mq, retain, quality_g, image_mode, debug):
+def snapshot_cycle(cfg, acc_map, tokens, mq, retain, quality_g, image_mode, debug,
+                   save_www=False, save_dir="/homeassistant/www/ezviz"):
     for cam in cfg.get("camaras", []) or []:
         nombre = cam.get("nombre", "camara")
         slug   = slugify(nombre)
@@ -442,10 +460,15 @@ def snapshot_cycle(cfg, acc_map, tokens, mq, retain, quality_g, image_mode, debu
         log(f"✅ [{acc_id}] Snapshot '{nombre}': {pic_url}")
         mq.publish(f"{BASE_TOPIC}/{slug}", json.dumps(payload, ensure_ascii=False), retain=retain)
 
-        if image_mode == "download" and pic_url:
+        if pic_url and (image_mode == "download" or save_www):
             img = download_image(pic_url, debug=debug)
             if img:
-                mq.publish(f"{BASE_TOPIC}/{slug}/image", img, retain=retain)
+                if image_mode == "download":
+                    mq.publish(f"{BASE_TOPIC}/{slug}/image", img, retain=retain)
+                if save_www:
+                    out = save_image_file(save_dir, slug, img)
+                    if out:
+                        log(f"💾 [{acc_id}] '{nombre}' → {out}", dbg=True, debug=debug)
 
 
 def run():
@@ -461,6 +484,8 @@ def run():
     discovery  = bool(cfg.get("discovery", True))
     disc_pref  = (cfg.get("discovery_prefix") or "homeassistant").rstrip("/")
     image_mode = cfg.get("image_mode", "url")
+    save_www   = bool(cfg.get("save_to_www", False))
+    save_dir   = cfg.get("save_dir") or "/homeassistant/www/ezviz"
 
     camaras = cfg.get("camaras", []) or []
     if not camaras:
@@ -504,7 +529,8 @@ def run():
     tokens = {}
     try:
         while True:
-            snapshot_cycle(cfg, acc_map, tokens, mq, retain, quality_g, image_mode, debug)
+            snapshot_cycle(cfg, acc_map, tokens, mq, retain, quality_g, image_mode, debug,
+                           save_www=save_www, save_dir=save_dir)
             if interval_m <= 0:
                 break
             log(f"⏱️ Próximo ciclo en {interval_m} min.", dbg=True, debug=debug)

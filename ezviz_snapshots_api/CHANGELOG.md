@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.0 (2026-10-14)
+
+### Nuevo
+- **`save_to_www`** (por defecto `false`): además de publicar por MQTT, guarda
+  cada snapshot como fichero JPEG en el `www` de Home Assistant
+  (`save_dir`, por defecto `/homeassistant/www/ezviz/<slug>.jpg`, escritura
+  atómica). Accesible como `/local/ezviz/<slug>.jpg` → vista de cámara en
+  dashboards, wall panels (Fully Kiosk) o TV **sin abrir ningún stream**
+  (pensado para cámaras sin RTSP y para no castigar placas débiles como el
+  Akuvox R20A). Requiere el volumen `homeassistant_config:rw` (nuevo `map`).
+
+
 ## 1.3.1 (2026-07-06)
 
 - **Limpieza automática de cámaras eliminadas o renombradas**: el add-on

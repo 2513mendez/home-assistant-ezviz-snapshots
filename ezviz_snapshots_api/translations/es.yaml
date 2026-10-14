@@ -24,6 +24,15 @@ configuration:
     description: >-
       url = la entidad usa el picUrl del cloud EZVIZ. download = el add-on
       descarga el JPEG y lo publica por MQTT (local, no caduca).
+  save_to_www:
+    name: Guardar en www de HA
+    description: >-
+      Además de MQTT, guardar cada snapshot como JPEG en el www de Home
+      Assistant (accesible como /local/ezviz/<slug>.jpg). Útil para
+      dashboards, wall panels o TV sin streams.
+  save_dir:
+    name: Carpeta de destino
+    description: Normalmente /homeassistant/www/ezviz.
   mqtt_source:
     name: Origen de credenciales MQTT
     description: >-
